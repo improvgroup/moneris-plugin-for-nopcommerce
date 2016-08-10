@@ -5,6 +5,7 @@ using Nop.Core;
 using Nop.Core.Domain.Payments;
 using Nop.Plugin.Payments.Moneris.Models;
 using Nop.Services.Configuration;
+using Nop.Services.Localization;
 using Nop.Services.Orders;
 using Nop.Services.Payments;
 using Nop.Web.Framework.Controllers;
@@ -13,28 +14,41 @@ namespace Nop.Plugin.Payments.Moneris.Controllers
 {
     public class PaymentMonerisController : BasePaymentController
     {
+        #region Fields
+
         private readonly ISettingService _settingService;
-        private readonly MonerisPaymentSettings _monerisPaymentSettings;
         private readonly IPaymentService _paymentService;
-        private readonly PaymentSettings _paymentSettings;
         private readonly IOrderService _orderService;
         private readonly IOrderProcessingService _orderProcessingService;
+        private readonly ILocalizationService _localizationService;
+        private readonly MonerisPaymentSettings _monerisPaymentSettings;
+        private readonly PaymentSettings _paymentSettings;
+
+        #endregion
+
+        #region Ctor
 
         public PaymentMonerisController(ISettingService settingService,
-            MonerisPaymentSettings monerisPaymentSettings,
             IPaymentService paymentService,
-            PaymentSettings paymentSettings,
             IOrderService orderService,
-            IOrderProcessingService orderProcessingService)
+            IOrderProcessingService orderProcessingService,
+            ILocalizationService localizationService,
+            MonerisPaymentSettings monerisPaymentSettings,
+            PaymentSettings paymentSettings)
         {
             this._settingService = settingService;
-            this._monerisPaymentSettings = monerisPaymentSettings;
             this._paymentService = paymentService;
-            this._paymentSettings = paymentSettings;
             this._orderService = orderService;
             this._orderProcessingService = orderProcessingService;
+            this._localizationService = localizationService;
+            this._monerisPaymentSettings = monerisPaymentSettings;
+            this._paymentSettings = paymentSettings;
         }
-        
+
+        #endregion
+
+        #region Methods
+
         [AdminAuthorize]
         [ChildActionOnly]
         public ActionResult Configure()
@@ -66,6 +80,8 @@ namespace Nop.Plugin.Payments.Moneris.Controllers
             _monerisPaymentSettings.PsStoreId = model.PsStoreId;
             _monerisPaymentSettings.UseSandbox = model.UseSandbox;
             _settingService.SaveSetting(_monerisPaymentSettings);
+
+            SuccessNotification(_localizationService.GetResource("Admin.Plugins.Saved"));
 
             return Configure();
         }
@@ -136,5 +152,7 @@ namespace Nop.Plugin.Payments.Moneris.Controllers
         {
             return RedirectToAction("Index", "Home", new { area = "" });
         }
+
+        #endregion
     }
 }
