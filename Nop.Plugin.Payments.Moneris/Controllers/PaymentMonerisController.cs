@@ -62,7 +62,7 @@ namespace Nop.Plugin.Payments.Moneris.Controllers
                                 UseSandbox = _monerisPaymentSettings.UseSandbox
                             };
 
-            return View("~/Plugins/Payments.Moneris/Views/PaymentMoneris/Configure.cshtml", model);
+            return View("~/Plugins/Payments.Moneris/Views/Configure.cshtml", model);
         }
 
         [HttpPost]
@@ -89,7 +89,7 @@ namespace Nop.Plugin.Payments.Moneris.Controllers
         [ChildActionOnly]
         public ActionResult PaymentInfo()
         {
-            return View("~/Plugins/Payments.Moneris/Views/PaymentMoneris/PaymentInfo.cshtml");
+            return View("~/Plugins/Payments.Moneris/Views/PaymentInfo.cshtml");
         }
 
         [NonAction]

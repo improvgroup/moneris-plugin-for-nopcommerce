@@ -26,6 +26,7 @@ namespace Nop.Plugin.Payments.Moneris
         private readonly ISettingService _settingService;
         private readonly MonerisPaymentSettings _monerisPaymentSettings;
         private readonly IOrderTotalCalculationService _orderTotalCalculationService;
+        private readonly ILocalizationService _localizationService;
 
         #endregion
 
@@ -33,11 +34,13 @@ namespace Nop.Plugin.Payments.Moneris
 
         public MonerisPaymentProcessor(ISettingService settingService, 
             MonerisPaymentSettings monerisPaymentSettings, 
-            IOrderTotalCalculationService orderTotalCalculationService)
+            IOrderTotalCalculationService orderTotalCalculationService,
+            ILocalizationService localizationService)
         {
             this._settingService = settingService;
             this._monerisPaymentSettings = monerisPaymentSettings;
             this._orderTotalCalculationService = orderTotalCalculationService;
+            this._localizationService = localizationService;
         }
 
         #endregion
@@ -80,7 +83,7 @@ namespace Nop.Plugin.Payments.Moneris
             req.Method = "POST";
             req.ContentType = "application/x-www-form-urlencoded";
 
-            string formContent = string.Format("ps_store_id={0}&hpp_key={1}&transactionKey={2}",
+            var formContent = string.Format("ps_store_id={0}&hpp_key={1}&transactionKey={2}",
                                                _monerisPaymentSettings.PsStoreId,
                                                _monerisPaymentSettings.HppKey,
                                                transactionKey);
@@ -91,11 +94,18 @@ namespace Nop.Plugin.Payments.Moneris
                 sw.Write(formContent);
             }
 
-            string response;
-            using (var sr = new StreamReader(req.GetResponse().GetResponseStream()))
+            var response = string.Empty;
+            var responseStream = req.GetResponse().GetResponseStream();
+            if (responseStream != null)
             {
-                response = HttpUtility.UrlDecode(sr.ReadToEnd());
+                using (var sr = new StreamReader(responseStream))
+                {
+                    response = HttpUtility.UrlDecode(sr.ReadToEnd());
+                }
             }
+
+            if (string.IsNullOrEmpty(response))
+                return false;
 
             var xmlResponse = new XmlDocument();
             xmlResponse.LoadXml(response);
@@ -109,16 +119,12 @@ namespace Nop.Plugin.Payments.Moneris
                 }
             }
 
-            if (values.ContainsKey("response_code"))
-            {
-                var responseCodeValue = values["response_code"];
-                int responseCode;
-                if (int.TryParse(responseCodeValue, out responseCode) && responseCode < 50)
-                {
-                    return true;
-                }
-            }
-            return false;
+            if (!values.ContainsKey("response_code"))
+                return false;
+            var responseCodeValue = values["response_code"];
+            int responseCode;
+
+            return int.TryParse(responseCodeValue, out responseCode) && responseCode < 50;
         }
 
         #endregion
@@ -370,6 +376,7 @@ namespace Nop.Plugin.Payments.Moneris
             this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.PsStoreId.Hint", "Enter your ps_store_id");
             this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.HppKey", "hpp_key");
             this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.HppKey.Hint", "Enter your hpp_key");
+            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.PaymentMethodDescription", "You will be redirected to Moneris site to complete the order.");
 
             base.Install();
         }
@@ -391,6 +398,7 @@ namespace Nop.Plugin.Payments.Moneris
             this.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.PsStoreId.Hint");
             this.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.HppKey");
             this.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.HppKey.Hint");
+            this.DeletePluginLocaleResource("Plugins.Payments.Moneris.PaymentMethodDescription");
 
             base.Uninstall();
         }
@@ -471,6 +479,14 @@ namespace Nop.Plugin.Payments.Moneris
         public bool SkipPaymentInfo
         {
             get { return false; }
+        }
+
+        /// <summary>
+        /// Gets a payment method description that will be displayed on checkout pages in the public store
+        /// </summary>
+        public string PaymentMethodDescription
+        {
+            get { return _localizationService.GetResource("Plugins.Payments.Moneris.PaymentMethodDescription"); }
         }
 
         #endregion
