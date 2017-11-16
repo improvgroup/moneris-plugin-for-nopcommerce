@@ -1,27 +1,24 @@
-﻿using System.Web.Mvc;
-using System.Web.Routing;
-using Nop.Web.Framework.Mvc.Routes;
+﻿using Microsoft.AspNetCore.Routing;
+using Nop.Web.Framework.Mvc.Routing;
+using Microsoft.AspNetCore.Builder;
 
 namespace Nop.Plugin.Payments.Moneris
 {
     public partial class RouteProvider : IRouteProvider
     {
-        public void RegisterRoutes(RouteCollection routes)
+        public void RegisterRoutes(IRouteBuilder routeBuilder)
         {
             //Success
-            routes.MapRoute("Plugin.Payments.Moneris.SuccessCallbackHandler",
+            routeBuilder.MapRoute("Plugin.Payments.Moneris.SuccessCallbackHandler",
                  "Plugins/PaymentMoneris/SuccessCallbackHandler",
-                 new { controller = "PaymentMoneris", action = "SuccessCallbackHandler" },
-                 new[] { "Nop.Plugin.Payments.Moneris.Controllers" }
-            );
+                 new { controller = "PaymentMoneris", action = "SuccessCallbackHandler" });
 
             //Fail
-            routes.MapRoute("Plugin.Payments.Moneris.FailCallbackHandler",
+            routeBuilder.MapRoute("Plugin.Payments.Moneris.FailCallbackHandler",
                  "Plugins/PaymentMoneris/FailCallbackHandler",
-                 new { controller = "PaymentMoneris", action = "FailCallbackHandler" },
-                 new[] { "Nop.Plugin.Payments.Moneris.Controllers" }
-            );
+                 new { controller = "PaymentMoneris", action = "FailCallbackHandler" });
         }
+
         public int Priority
         {
             get

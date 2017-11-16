@@ -4,9 +4,9 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Text;
-using System.Web;
-using System.Web.Routing;
 using System.Xml;
+using Microsoft.AspNetCore.Http;
+using Nop.Core;
 using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Payments;
 using Nop.Core.Plugins;
@@ -27,6 +27,7 @@ namespace Nop.Plugin.Payments.Moneris
         private readonly MonerisPaymentSettings _monerisPaymentSettings;
         private readonly IOrderTotalCalculationService _orderTotalCalculationService;
         private readonly ILocalizationService _localizationService;
+        private readonly IWebHelper _webHelper;
 
         #endregion
 
@@ -35,12 +36,14 @@ namespace Nop.Plugin.Payments.Moneris
         public MonerisPaymentProcessor(ISettingService settingService, 
             MonerisPaymentSettings monerisPaymentSettings, 
             IOrderTotalCalculationService orderTotalCalculationService,
-            ILocalizationService localizationService)
+            ILocalizationService localizationService,
+            IWebHelper webHelper)
         {
             this._settingService = settingService;
             this._monerisPaymentSettings = monerisPaymentSettings;
             this._orderTotalCalculationService = orderTotalCalculationService;
             this._localizationService = localizationService;
+            this._webHelper = webHelper;
         }
 
         #endregion
@@ -83,10 +86,7 @@ namespace Nop.Plugin.Payments.Moneris
             req.Method = "POST";
             req.ContentType = "application/x-www-form-urlencoded";
 
-            var formContent = string.Format("ps_store_id={0}&hpp_key={1}&transactionKey={2}",
-                                               _monerisPaymentSettings.PsStoreId,
-                                               _monerisPaymentSettings.HppKey,
-                                               transactionKey);
+            var formContent = $"ps_store_id={_monerisPaymentSettings.PsStoreId}&hpp_key={_monerisPaymentSettings.HppKey}&transactionKey={transactionKey}";
 
             req.ContentLength = formContent.Length;
             using (var sw = new StreamWriter(req.GetRequestStream(), Encoding.ASCII))
@@ -100,7 +100,7 @@ namespace Nop.Plugin.Payments.Moneris
             {
                 using (var sr = new StreamReader(responseStream))
                 {
-                    response = HttpUtility.UrlDecode(sr.ReadToEnd());
+                    response = WebUtility.UrlDecode(sr.ReadToEnd());
                 }
             }
 
@@ -314,7 +314,7 @@ namespace Nop.Plugin.Payments.Moneris
         public bool CanRePostProcessPayment(Order order)
         {
             if (order == null)
-                throw new ArgumentNullException("order");
+                throw new ArgumentNullException(nameof(order));
 
             //let's ensure that at least 1 minute passed after order is placed
             if ((DateTime.UtcNow - order.CreatedOnUtc).TotalMinutes < 1)
@@ -328,30 +328,26 @@ namespace Nop.Plugin.Payments.Moneris
             return typeof(PaymentMonerisController);
         }
 
-        /// <summary>
-        /// Gets a route for payment info
-        /// </summary>
-        /// <param name="actionName">Action name</param>
-        /// <param name="controllerName">Controller name</param>
-        /// <param name="routeValues">Route values</param>
-        public void GetPaymentInfoRoute(out string actionName, out string controllerName, out RouteValueDictionary routeValues)
+        public ProcessPaymentRequest GetPaymentInfo(IFormCollection form)
         {
-            actionName = "PaymentInfo";
-            controllerName = "PaymentMoneris";
-            routeValues = new RouteValueDictionary() { { "Namespaces", "Nop.Plugin.Payments.Moneris.Controllers" }, { "area", null } };
+            var paymentInfo = new ProcessPaymentRequest();
+            return paymentInfo;
         }
 
-        /// <summary>
-        /// Gets a route for provider configuration
-        /// </summary>
-        /// <param name="actionName">Action name</param>
-        /// <param name="controllerName">Controller name</param>
-        /// <param name="routeValues">Route values</param>
-        public void GetConfigurationRoute(out string actionName, out string controllerName, out RouteValueDictionary routeValues)
+        public void GetPublicViewComponent(out string viewComponentName)
         {
-            actionName = "Configure";
-            controllerName = "PaymentMoneris";
-            routeValues = new RouteValueDictionary() { { "Namespaces", "Nop.Plugin.Payments.Moneris.Controllers" }, { "area", null } };
+            viewComponentName = "PaymentMoneris";
+        }
+
+        public IList<string> ValidatePaymentForm(IFormCollection form)
+        {
+            var warnings = new List<string>();
+            return warnings;
+        }
+
+        public override string GetConfigurationPageUrl()
+        {
+            return $"{_webHelper.GetStoreLocation()}Admin/PaymentMoneris/Configure";
         }
 
         public override void Install()
