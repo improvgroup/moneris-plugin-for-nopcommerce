@@ -110,7 +110,7 @@ namespace Nop.Plugin.Payments.Moneris.Controllers
             return Configure();
         }
 
-        public IActionResult SuccessCallbackHandler()
+        public IActionResult SuccessCallbackHandler(IpnModel model)
         {
             var processor = _paymentService.LoadPaymentMethodBySystemName("Payments.Moneris") as MonerisPaymentProcessor;
             if (processor == null || !processor.IsPaymentMethodActive(_paymentSettings) || !processor.PluginDescriptor.Installed)
@@ -118,7 +118,7 @@ namespace Nop.Plugin.Payments.Moneris.Controllers
                 throw new NopException("Moneris module cannot be loaded");
             }
 
-            var parameters = Request.Form;
+            var parameters = model.Form;
 
             if (string.IsNullOrEmpty(GetValue("transactionKey", parameters)) || string.IsNullOrEmpty(GetValue("rvar_order_id", parameters)))
                 return RedirectToAction("Index", "Home", new {area = ""});
