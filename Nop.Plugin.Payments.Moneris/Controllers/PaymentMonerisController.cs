@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Nop.Core;
-using Nop.Core.Domain.Payments;
 using Nop.Plugin.Payments.Moneris.Models;
 using Nop.Services.Configuration;
 using Nop.Services.Localization;
@@ -19,39 +18,36 @@ namespace Nop.Plugin.Payments.Moneris.Controllers
     {
         #region Fields
 
-        private readonly ISettingService _settingService;
-        private readonly IPaymentService _paymentService;
+        private readonly ILocalizationService _localizationService;
         private readonly IOrderService _orderService;
         private readonly IOrderProcessingService _orderProcessingService;
-        private readonly ILocalizationService _localizationService;
-        private readonly MonerisPaymentSettings _monerisPaymentSettings;
-        private readonly PaymentSettings _paymentSettings;
-        private readonly IWebHelper _webHelper;
+        private readonly IPaymentService _paymentService;
         private readonly IPermissionService _permissionService;
+        private readonly ISettingService _settingService;
+        private readonly IWebHelper _webHelper;
+        private readonly MonerisPaymentSettings _monerisPaymentSettings;
 
         #endregion
 
         #region Ctor
 
-        public PaymentMonerisController(ISettingService settingService,
-            IPaymentService paymentService,
+        public PaymentMonerisController(ILocalizationService localizationService,
             IOrderService orderService,
             IOrderProcessingService orderProcessingService,
-            ILocalizationService localizationService,
-            MonerisPaymentSettings monerisPaymentSettings,
-            PaymentSettings paymentSettings,
+            IPaymentService paymentService,
+            IPermissionService permissionService,
+            ISettingService settingService,
             IWebHelper webHelper,
-            IPermissionService permissionService)
+            MonerisPaymentSettings monerisPaymentSettings)
         {
-            this._settingService = settingService;
-            this._paymentService = paymentService;
+            this._localizationService = localizationService;
             this._orderService = orderService;
             this._orderProcessingService = orderProcessingService;
-            this._localizationService = localizationService;
-            this._monerisPaymentSettings = monerisPaymentSettings;
-            this._paymentSettings = paymentSettings;
-            this._webHelper = webHelper;
+            this._paymentService = paymentService;
             this._permissionService = permissionService;
+            this._settingService = settingService;
+            this._webHelper = webHelper;
+            this._monerisPaymentSettings = monerisPaymentSettings;
         }
 
         #endregion
@@ -113,7 +109,7 @@ namespace Nop.Plugin.Payments.Moneris.Controllers
         public IActionResult SuccessCallbackHandler(IpnModel model)
         {
             var processor = _paymentService.LoadPaymentMethodBySystemName("Payments.Moneris") as MonerisPaymentProcessor;
-            if (processor == null || !processor.IsPaymentMethodActive(_paymentSettings) || !processor.PluginDescriptor.Installed)
+            if (processor == null || !_paymentService.IsPaymentMethodActive(processor) || !processor.PluginDescriptor.Installed)
             {
                 throw new NopException("Moneris module cannot be loaded");
             }

@@ -10,7 +10,6 @@ using Nop.Core;
 using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Payments;
 using Nop.Core.Plugins;
-using Nop.Plugin.Payments.Moneris.Controllers;
 using Nop.Services.Configuration;
 using Nop.Services.Localization;
 using Nop.Services.Orders;
@@ -23,27 +22,27 @@ namespace Nop.Plugin.Payments.Moneris
     {
         #region Fields
 
-        private readonly ISettingService _settingService;
-        private readonly MonerisPaymentSettings _monerisPaymentSettings;
-        private readonly IOrderTotalCalculationService _orderTotalCalculationService;
         private readonly ILocalizationService _localizationService;
+        private readonly IPaymentService _paymentService;
+        private readonly ISettingService _settingService;
         private readonly IWebHelper _webHelper;
+        private readonly MonerisPaymentSettings _monerisPaymentSettings;
 
         #endregion
 
         #region Ctor
 
-        public MonerisPaymentProcessor(ISettingService settingService, 
-            MonerisPaymentSettings monerisPaymentSettings, 
-            IOrderTotalCalculationService orderTotalCalculationService,
-            ILocalizationService localizationService,
-            IWebHelper webHelper)
+        public MonerisPaymentProcessor(ILocalizationService localizationService,
+            IPaymentService paymentService,
+            ISettingService settingService,
+            IWebHelper webHelper,
+            MonerisPaymentSettings monerisPaymentSettings)
         {
-            this._settingService = settingService;
-            this._monerisPaymentSettings = monerisPaymentSettings;
-            this._orderTotalCalculationService = orderTotalCalculationService;
             this._localizationService = localizationService;
+            this._paymentService = paymentService;
+            this._settingService = settingService;
             this._webHelper = webHelper;
+            this._monerisPaymentSettings = monerisPaymentSettings;
         }
 
         #endregion
@@ -241,8 +240,8 @@ namespace Nop.Plugin.Payments.Moneris
         /// <returns>Additional handling fee</returns>
         public decimal GetAdditionalHandlingFee(IList<ShoppingCartItem> cart)
         {
-            var result = this.CalculateAdditionalFee(_orderTotalCalculationService, cart,
-               _monerisPaymentSettings.AdditionalFee, _monerisPaymentSettings.AdditionalFeePercentage);
+            var result = _paymentService.CalculateAdditionalFee(cart,
+                _monerisPaymentSettings.AdditionalFee, _monerisPaymentSettings.AdditionalFeePercentage);
             return result;
         }
 
@@ -323,20 +322,15 @@ namespace Nop.Plugin.Payments.Moneris
             return true;
         }
 
-        public Type GetControllerType()
-        {
-            return typeof(PaymentMonerisController);
-        }
-
         public ProcessPaymentRequest GetPaymentInfo(IFormCollection form)
         {
             var paymentInfo = new ProcessPaymentRequest();
             return paymentInfo;
         }
 
-        public void GetPublicViewComponent(out string viewComponentName)
+        public string GetPublicViewComponentName()
         {
-            viewComponentName = "PaymentMoneris";
+            return "PaymentMoneris";
         }
 
         public IList<string> ValidatePaymentForm(IFormCollection form)
@@ -361,18 +355,18 @@ namespace Nop.Plugin.Payments.Moneris
             _settingService.SaveSetting(settings);
 
             //locales
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.RedirectionTip", "You will be redirected to Moneris site to complete the order.");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.UseSandbox", "Use Sandbox");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.UseSandbox.Hint", "Check to enable Sandbox (testing environment).");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFee", "Additional fee");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFee.Hint", "Enter additional fee to charge your customers.");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFeePercentage", "Additinal fee. Use percentage");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFeePercentage.Hint", "Determines whether to apply a percentage additional fee to the order total. If not enabled, a fixed value is used.");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.PsStoreId", "ps_store_id");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.PsStoreId.Hint", "Enter your ps_store_id");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.HppKey", "hpp_key");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.HppKey.Hint", "Enter your hpp_key");
-            this.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.PaymentMethodDescription", "You will be redirected to Moneris site to complete the order.");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.RedirectionTip", "You will be redirected to Moneris site to complete the order.");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.UseSandbox", "Use Sandbox");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.UseSandbox.Hint", "Check to enable Sandbox (testing environment).");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFee", "Additional fee");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFee.Hint", "Enter additional fee to charge your customers.");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFeePercentage", "Additinal fee. Use percentage");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFeePercentage.Hint", "Determines whether to apply a percentage additional fee to the order total. If not enabled, a fixed value is used.");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.PsStoreId", "ps_store_id");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.PsStoreId.Hint", "Enter your ps_store_id");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.HppKey", "hpp_key");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.Fields.HppKey.Hint", "Enter your hpp_key");
+            _localizationService.AddOrUpdatePluginLocaleResource("Plugins.Payments.Moneris.PaymentMethodDescription", "You will be redirected to Moneris site to complete the order.");
 
             base.Install();
         }
@@ -383,18 +377,18 @@ namespace Nop.Plugin.Payments.Moneris
             _settingService.DeleteSetting<MonerisPaymentSettings>();
 
             //locales
-            this.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.RedirectionTip");
-            this.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.UseSandbox");
-            this.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.UseSandbox.Hint");
-            this.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFee");
-            this.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFee.Hint");
-            this.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFeePercentage");
-            this.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFeePercentage.Hint");
-            this.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.PsStoreId");
-            this.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.PsStoreId.Hint");
-            this.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.HppKey");
-            this.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.HppKey.Hint");
-            this.DeletePluginLocaleResource("Plugins.Payments.Moneris.PaymentMethodDescription");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.RedirectionTip");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.UseSandbox");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.UseSandbox.Hint");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFee");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFee.Hint");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFeePercentage");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.AdditionalFeePercentage.Hint");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.PsStoreId");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.PsStoreId.Hint");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.HppKey");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.Moneris.Fields.HppKey.Hint");
+            _localizationService.DeletePluginLocaleResource("Plugins.Payments.Moneris.PaymentMethodDescription");
 
             base.Uninstall();
         }
